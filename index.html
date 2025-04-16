@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Vimeo Webplayer</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f4f4f4; }
+    #player { width:100%; max-width:800px; margin:20px auto; }
+    .video-gallery { display:grid; grid-template-columns: repeat(auto-fill, minmax(150px,1fr)); gap:10px; padding:10px; max-width:800px; margin:0 auto; }
+    .thumbnail { cursor:pointer; border:2px solid transparent; padding:5px; background:#fff; border-radius:4px; }
+    .thumbnail:hover { border-color:#0073e6; }
+    .thumbnail img { width:100%; height:auto; display:block; border-radius:4px; }
+    .thumbnail p { text-align:center; font-size:0.9em; margin:5px 0 0; }
+  </style>
+</head>
+<body>
+  <div id="player"><p style="text-align:center; padding:50px; color:#666;">Select a video to play</p></div>
+  <div class="video-gallery" id="gallery"></div>
+  <script>
+    // List your Vimeo video URLs here
+    const videoUrls = [
+      'https://vimeo.com/123456789',
+      'https://vimeo.com/987654321',
+      // add more URLs
+    ];
+
+    const gallery = document.getElementById('gallery');
+    const player = document.getElementById('player');
+
+    videoUrls.forEach(async url => {
+      const id = url.split('/').pop();
+      try {
+        // Fetch thumbnail via Vimeo oEmbed
+        const response = await fetch(`https://vimeo.com/api/oembed.json?url=${url}`);
+        const data = await response.json();
+        const thumb = data.thumbnail_url;
+
+        // Create thumbnail element
+        const thumbDiv = document.createElement('div');
+        thumbDiv.className = 'thumbnail';
+        thumbDiv.innerHTML = `
+          <img src="${thumb}" alt="Video ${id}" />
+          <p>Video ${id}</p>
+        `;
+
+        // Click handler to load player
+        thumbDiv.addEventListener('click', () => {
+          player.innerHTML = `
+            <iframe src="https://player.vimeo.com/video/${id}?autoplay=1" 
+                    width="100%" height="450" frameborder="0" 
+                    allow="autoplay; fullscreen" allowfullscreen>
+            </iframe>
+          `;
+        });
+
+        gallery.appendChild(thumbDiv);
+      } catch (err) {
+        console.error('Error loading video', id, err);
+      }
+    });
+  </script>
+</body>
+</html>
