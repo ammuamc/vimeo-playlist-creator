@@ -3,62 +3,117 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Vimeo Webplayer</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f4f4f4; }
-    #player { width:100%; max-width:800px; margin:20px auto; }
-    .video-gallery { display:grid; grid-template-columns: repeat(auto-fill, minmax(150px,1fr)); gap:10px; padding:10px; max-width:800px; margin:0 auto; }
-    .thumbnail { cursor:pointer; border:2px solid transparent; padding:5px; background:#fff; border-radius:4px; }
-    .thumbnail:hover { border-color:#0073e6; }
-    .thumbnail img { width:100%; height:auto; display:block; border-radius:4px; }
-    .thumbnail p { text-align:center; font-size:0.9em; margin:5px 0 0; }
-  </style>
+  <title>Vimeo Playlist Creator</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div id="player"><p style="text-align:center; padding:50px; color:#666;">Select a video to play</p></div>
-  <div class="video-gallery" id="gallery"></div>
-  <script>
-    // List your Vimeo video URLs here
-    const videoUrls = [
-      'https://vimeo.com/123456789',
-      'https://vimeo.com/987654321',
-      // add more URLs
-    ];
+  <div id="controls">
+    <textarea id="videoLinks" placeholder="Paste Vimeo URLs, one per line"></textarea>
+    <button id="loadButton">Load Videos</button>
+    <div id="shareLinkContainer" style="display:none;"></div>
+  </div>
 
+  <div class="content">
+    <img src="images/logo.png" alt="Logo" id="headerLogo" />
+    <div id="player" class="player-container">
+      <p class="placeholder">Select a video to play</p>
+    </div>
+    <div class="slider-container">
+      <button id="prevBtn" style="display:none;">&#9664;</button>
+      <div class="video-gallery" id="gallery"></div>
+      <button id="nextBtn" style="display:none;">&#9654;</button>
+    </div>
+  </div>
+
+  <script>
     const gallery = document.getElementById('gallery');
     const player = document.getElementById('player');
+    const loadButton = document.getElementById('loadButton');
+    const controls = document.getElementById('controls');
+    const shareContainer = document.getElementById('shareLinkContainer');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
 
-    videoUrls.forEach(async url => {
-      const id = url.split('/').pop();
+    function parseVimeoUrl(url) {
       try {
-        // Fetch thumbnail via Vimeo oEmbed
-        const response = await fetch(`https://vimeo.com/api/oembed.json?url=${url}`);
-        const data = await response.json();
-        const thumb = data.thumbnail_url;
+        const u = new URL(url);
+        const segments = u.pathname.split('/').filter(Boolean);
+        let id = segments[0] || null;
+        let hash = null;
+        if (segments[1] && /^[0-9a-fA-F]+$/.test(segments[1])) hash = segments[1];
+        if (u.searchParams.has('h')) hash = u.searchParams.get('h');
+        return { id, hash };
+      } catch {
+        return {};
+      }
+    }
 
-        // Create thumbnail element
-        const thumbDiv = document.createElement('div');
-        thumbDiv.className = 'thumbnail';
-        thumbDiv.innerHTML = `
-          <img src="${thumb}" alt="Video ${id}" />
-          <p>Video ${id}</p>
-        `;
+    function createIframe(id, hash) {
+      let src = `https://player.vimeo.com/video/${id}?autoplay=1&badge=0`;
+      if (hash) src += `&h=${hash}`;
+      return `<iframe src="${src}" allow="autoplay; fullscreen" allowfullscreen></iframe>`;
+    }
 
-        // Click handler to load player
-        thumbDiv.addEventListener('click', () => {
-          player.innerHTML = `
-            <iframe src="https://player.vimeo.com/video/${id}?autoplay=1" 
-                    width="100%" height="450" frameborder="0" 
-                    allow="autoplay; fullscreen" allowfullscreen>
-            </iframe>
-          `;
-        });
-
-        gallery.appendChild(thumbDiv);
-      } catch (err) {
-        console.error('Error loading video', id, err);
+    document.addEventListener('DOMContentLoaded', () => {
+      const params = new URLSearchParams(window.location.search);
+      const videosParam = params.get('videos');
+      if (videosParam) {
+        controls.style.display = 'none';
+        loadVideos(videosParam.split(';').map(u => decodeURIComponent(u)));
       }
     });
+
+    loadButton.addEventListener('click', () => {
+      const urls = document.getElementById('videoLinks').value
+        .split('\n').map(l => l.trim()).filter(Boolean);
+      const shareLink = `${window.location.origin}${window.location.pathname}?videos=${urls.map(encodeURIComponent).join(';')}`;
+      shareContainer.innerHTML = `<p>Share this playlist: <a href="${shareLink}" target="_blank">${shareLink}</a></p>`;
+      shareContainer.style.display = 'block';
+      loadVideos(urls);
+    });
+
+    async function loadVideos(urls) {
+      gallery.innerHTML = '';
+      player.innerHTML = '<p class="placeholder">Loading...</p>';
+      const items = [];
+
+      for (const url of urls) {
+        const { id, hash } = parseVimeoUrl(url);
+        if (!id) continue;
+        try {
+          const resp = await fetch(`https://vimeo.com/api/oembed.json?url=${encodeURIComponent(url)}`);
+          const data = await resp.json();
+          const thumbDiv = document.createElement('div');
+          thumbDiv.className = 'thumbnail';
+          thumbDiv.innerHTML = `
+            <img src="${data.thumbnail_url}" alt="${data.title}" />
+            <p>${data.title}</p>
+          `;
+          thumbDiv.addEventListener('click', () => playVideo(id, hash, thumbDiv));
+          gallery.appendChild(thumbDiv);
+          items.push({ id, hash, thumbDiv });
+        } catch (e) {
+          console.error('Error loading', id, e);
+        }
+      }
+
+      // show arrows if >5
+      if (items.length > 5) {
+        prevBtn.style.display = 'block'; nextBtn.style.display = 'block';
+      } else {
+        prevBtn.style.display = 'none'; nextBtn.style.display = 'none';
+      }
+      prevBtn.onclick = () => gallery.scrollBy({ left: -gallery.clientWidth, behavior: 'smooth' });
+      nextBtn.onclick = () => gallery.scrollBy({ left: gallery.clientWidth, behavior: 'smooth' });
+
+      if (items.length) playVideo(items[0].id, items[0].hash, items[0].thumbDiv);
+    }
+
+    function playVideo(id, hash, thumbDiv) {
+      document.querySelectorAll('.thumbnail.active').forEach(el => el.classList.remove('active'));
+      thumbDiv.classList.add('active');
+      player.innerHTML = createIframe(id, hash);
+    }
   </script>
 </body>
 </html>
