@@ -175,6 +175,50 @@
         "https://vimeo.com/987236293",
         "https://vimeo.com/686394008"
       ]
+    },
+    "amazing-work": {
+      "name": "amazing work",
+      "urls": [
+        "https://vimeo.com/207483566",
+        "https://vimeo.com/1071526920",
+        "https://vimeo.com/808823576",
+        "https://vimeo.com/915304798/1b919d0725",
+        "https://vimeo.com/189215292/f2546646c3",
+        "https://vimeo.com/982760454/1270552343",
+        "https://vimeo.com/128161172/8bf65797b1",
+        "https://vimeo.com/987236293",
+        "https://vimeo.com/686394008"
+      ]
+    },
+    "funny": {
+      "name": "funny",
+      "urls": [
+        "https://vimeo.com/116367510/62273e39f5",
+        "https://vimeo.com/982760454/1270552343",
+        "https://vimeo.com/987236293",
+        "https://vimeo.com/1071526920",
+        "https://vimeo.com/808823576",
+        "https://vimeo.com/915304798/1b919d0725",
+        "https://vimeo.com/189215292/f2546646c3",
+        "https://vimeo.com/128161172/8bf65797b1",
+        "https://vimeo.com/987236293",
+        "https://vimeo.com/686394008"
+      ]
+    },
+    "hero": {
+      "name": "hero",
+      "urls": [
+        "https://vimeo.com/116367510/62273e39f5",
+        "https://vimeo.com/982760454/1270552343",
+        "https://vimeo.com/987236293",
+        "https://vimeo.com/1071526920",
+        "https://vimeo.com/808823576",
+        "https://vimeo.com/915304798/1b919d0725",
+        "https://vimeo.com/189215292/f2546646c3",
+        "https://vimeo.com/128161172/8bf65797b1",
+        "https://vimeo.com/987236293",
+        "https://vimeo.com/686394008"
+      ]
     }
   }
 }
