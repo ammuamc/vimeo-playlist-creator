@@ -10,7 +10,7 @@ body {
   min-height: 100vh;
 }
 
-/* Crisp text on all elements */
+/* Crisp text on all elements CHECK HERE */
 body * {
   text-rendering: geometricPrecision;
 }
