@@ -58,6 +58,13 @@
       <div class="video-gallery" id="gallery"></div>
       <button id="nextBtn" class="btn-nav">&#9654;</button>
     </div>
+
+    <!-- Separator & Saved Playlists -->
+    <hr class="separator" />
+    <section id="savedPlaylists">
+      <h2>Saved Playlists</h2>
+      <ul id="playlistList"></ul>
+    </section>
   </div>
 
   <script>
@@ -73,10 +80,20 @@
     const prevBtn          = document.getElementById('prevBtn');
     const nextBtn          = document.getElementById('nextBtn');
     const titleBox         = document.getElementById('currentTitle');
+    const playlistUl       = document.getElementById('playlistList');
 
-    // On page load, handle playlistId or videos parameters
     document.addEventListener('DOMContentLoaded', () => {
-      const params = new URLSearchParams(window.location.search);
+      const params     = new URLSearchParams(window.location.search);
+      const isFinished = params.has('playlistId') || params.has('videos');
+
+      // hide saved section on finished view
+      if (isFinished) {
+        const sep   = document.querySelector('.separator');
+        const saved = document.getElementById('savedPlaylists');
+        if (sep)   sep.style.display   = 'none';
+        if (saved) saved.style.display = 'none';
+      }
+
       if (params.has('playlistId')) {
         document.querySelector('header').style.display = 'none';
         controls.style.display = 'none';
@@ -87,9 +104,23 @@
         const urls = params.get('videos').split(';').map(decodeURIComponent);
         videoLinks.value = urls.join('\n');
       }
+
+      if (!isFinished) {
+        fetch('/api/playlists')
+          .then(r => r.json())
+          .then(list => {
+            if (!list.length) {
+              playlistUl.innerHTML = '<li class="empty">No saved playlists yet.</li>';
+            } else {
+              playlistUl.innerHTML = list.map(pl => `
+                <li><a href="?playlistId=${pl.id}">${pl.name}</a></li>
+              `).join('');
+            }
+          })
+          .catch(console.error);
+      }
     });
 
-    // Load-from-URL handler
     loadUrlButton.addEventListener('click', async () => {
       try {
         const u = new URL(playlistUrlInput.value.trim());
@@ -101,21 +132,19 @@
         } else if (u.searchParams.has('playlistId')) {
           const res = await fetch(`/api/playlists/${u.searchParams.get('playlistId')}`);
           if (!res.ok) throw new Error();
-          urls = (await res.json()).urls;
-          loadVideos(urls);
+          const data = await res.json();
+          loadVideos(data.urls);
         } else throw new Error();
       } catch {
         alert('Invalid playlist URL');
       }
     });
 
-    // Load button
     loadButton.addEventListener('click', () => {
       const urls = videoLinks.value.split('\n').map(l => l.trim()).filter(Boolean);
       loadVideos(urls);
     });
 
-    // Save button
     saveButton.addEventListener('click', async () => {
       const name = prompt('Name this playlist'); if (!name) return;
       const urls = videoLinks.value.split('\n').map(l => l.trim()).filter(Boolean);
@@ -126,7 +155,7 @@
       });
       const { id } = await res.json();
       shareContainer.innerHTML = `
-        <p>Saved! Share this playlist: 
+        <p>Saved! Share this playlist:
           <a href="${location.origin}/?playlistId=${id}" target="_blank">
             ${location.origin}/?playlistId=${id}
           </a>
@@ -134,7 +163,6 @@
       shareContainer.style.display = 'block';
     });
 
-    // Core loader
     async function loadVideos(urls) {
       gallery.innerHTML = '';
       player.innerHTML  = '<p class="placeholder">Loading...</p>';
@@ -164,7 +192,6 @@
       if (items.length) playVideo(items[0].id, items[0].hash, items[0].thumb);
     }
 
-    // Helpers
     function parseVimeoUrl(url) {
       try {
         const u = new URL(url);
@@ -179,8 +206,7 @@
     }
 
     function playVideo(id, hash, thumb) {
-      document.querySelectorAll('.thumbnail.active')
-              .forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.thumbnail.active').forEach(el => el.classList.remove('active'));
       thumb.classList.add('active');
       titleBox.textContent = thumb.dataset.title;
       let src = `https://player.vimeo.com/video/${id}?autoplay=1&badge=0`;

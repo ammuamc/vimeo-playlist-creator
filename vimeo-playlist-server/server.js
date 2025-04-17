@@ -1,23 +1,22 @@
 // server.js
 // Express server with lowdb JSON "database" and slug‑based playlist IDs
 
-const express = require('express');
-const cors = require('cors');
-const { Low } = require('lowdb');
+const express   = require('express');
+const cors      = require('cors');
+const { Low }   = require('lowdb');
 const { JSONFile } = require('lowdb/node');
-const slugify = require('slugify');
+const slugify   = require('slugify');
 const { nanoid } = require('nanoid');
-const { join } = require('path');
+const { join }  = require('path');
 
 // --- lowdb setup ---
-const dbFile = join(__dirname, 'db.json');
-const adapter = new JSONFile(dbFile);
+const dbFile      = join(__dirname, 'db.json');
+const adapter     = new JSONFile(dbFile);
 const defaultData = { playlists: {} };
-const db = new Low(adapter, defaultData);
+const db          = new Low(adapter, defaultData);
 
 async function initDB() {
   await db.read();
-  // ensure default structure
   db.data ||= defaultData;
   await db.write();
 }
@@ -29,6 +28,15 @@ app.use(express.json());
 
 // Serve static frontend
 app.use(express.static(join(__dirname, 'public')));
+
+// List all playlists (GET /api/playlists)
+app.get('/api/playlists', async (req, res) => {
+  await db.read();
+  const list = Object.entries(db.data.playlists || {}).map(
+    ([id, { name, urls }]) => ({ id, name, urls })
+  );
+  res.json(list);
+});
 
 // Create a new playlist (POST /api/playlists)
 app.post('/api/playlists', async (req, res) => {
@@ -55,6 +63,7 @@ app.post('/api/playlists', async (req, res) => {
 
 // Retrieve a playlist by ID (GET /api/playlists/:id)
 app.get('/api/playlists/:id', async (req, res) => {
+  await db.read();
   const playlist = db.data.playlists[req.params.id];
   if (!playlist) {
     return res.status(404).json({ error: 'Playlist not found' });
