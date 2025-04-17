@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Vimeo Playlist Creator</title>
+  <!-- Google Fonts: Anton -->
+  <link href="https://fonts.googleapis.com/css2?family=Anton&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Builder Header -->
+  <header class="header">
+    <h1 id="pageTitle">Vimeo Playlist Builder</h1>
+  </header>
+
+  <!-- Controls -->
+  <div id="controls">
+    <input
+      type="text"
+      id="playlistUrlInput"
+      class="input-url"
+      placeholder="Paste playlist URL here"
+    />
+    <button id="loadUrlButton" class="btn">Load from URL</button>
+
+    <br /><br />
+
+    <textarea
+      id="videoLinks"
+      class="input-area"
+      placeholder="Paste Vimeo URLs, one per line"
+    ></textarea>
+    <button id="loadButton" class="btn">Load Videos</button>
+    <button id="saveButton" class="btn">Save Playlist</button>
+
+    <!-- only shown after save -->
+    <div id="shareLinkContainer" class="share"></div>
+  </div>
+
+  <!-- Player & Thumbnails -->
+  <div class="content">
+    <!-- Full‑width white logo row -->
+    <div class="logo-row">
+      <img src="images/logo.png" alt="Logo" id="headerLogo" />
+    </div>
+
+    <div id="player" class="player-container">
+      <p class="placeholder">Select a video to play</p>
+    </div>
+
+    <!-- Current video title, full‑width -->
+    <div id="currentTitle" class="current-title"></div>
+
+    <!-- Thumbnails slider, full‑width background -->
+    <div class="slider-container">
+      <button id="prevBtn" class="btn-nav">&#9664;</button>
+      <div class="video-gallery" id="gallery"></div>
+      <button id="nextBtn" class="btn-nav">&#9654;</button>
+    </div>
+  </div>
+
+  <script>
+    const controls         = document.getElementById('controls');
+    const playlistUrlInput = document.getElementById('playlistUrlInput');
+    const loadUrlButton    = document.getElementById('loadUrlButton');
+    const videoLinks       = document.getElementById('videoLinks');
+    const loadButton       = document.getElementById('loadButton');
+    const saveButton       = document.getElementById('saveButton');
+    const shareContainer   = document.getElementById('shareLinkContainer');
+    const gallery          = document.getElementById('gallery');
+    const player           = document.getElementById('player');
+    const prevBtn          = document.getElementById('prevBtn');
+    const nextBtn          = document.getElementById('nextBtn');
+    const titleBox         = document.getElementById('currentTitle');
+
+    // On page load, handle playlistId or videos parameters
+    document.addEventListener('DOMContentLoaded', () => {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has('playlistId')) {
+        document.querySelector('header').style.display = 'none';
+        controls.style.display = 'none';
+        fetch(`/api/playlists/${params.get('playlistId')}`)
+          .then(r => r.json())
+          .then(data => loadVideos(data.urls));
+      } else if (params.has('videos')) {
+        const urls = params.get('videos').split(';').map(decodeURIComponent);
+        videoLinks.value = urls.join('\n');
+      }
+    });
+
+    // Load-from-URL handler
+    loadUrlButton.addEventListener('click', async () => {
+      try {
+        const u = new URL(playlistUrlInput.value.trim());
+        let urls;
+        if (u.searchParams.has('videos')) {
+          urls = u.searchParams.get('videos').split(';').map(decodeURIComponent);
+          videoLinks.value = urls.join('\n');
+          loadButton.click();
+        } else if (u.searchParams.has('playlistId')) {
+          const res = await fetch(`/api/playlists/${u.searchParams.get('playlistId')}`);
+          if (!res.ok) throw new Error();
+          urls = (await res.json()).urls;
+          loadVideos(urls);
+        } else throw new Error();
+      } catch {
+        alert('Invalid playlist URL');
+      }
+    });
+
+    // Load button
+    loadButton.addEventListener('click', () => {
+      const urls = videoLinks.value.split('\n').map(l => l.trim()).filter(Boolean);
+      loadVideos(urls);
+    });
+
+    // Save button
+    saveButton.addEventListener('click', async () => {
+      const name = prompt('Name this playlist'); if (!name) return;
+      const urls = videoLinks.value.split('\n').map(l => l.trim()).filter(Boolean);
+      const res = await fetch('/api/playlists', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ name, urls })
+      });
+      const { id } = await res.json();
+      shareContainer.innerHTML = `
+        <p>Saved! Share this playlist: 
+          <a href="${location.origin}/?playlistId=${id}" target="_blank">
+            ${location.origin}/?playlistId=${id}
+          </a>
+        </p>`;
+      shareContainer.style.display = 'block';
+    });
+
+    // Core loader
+    async function loadVideos(urls) {
+      gallery.innerHTML = '';
+      player.innerHTML  = '<p class="placeholder">Loading...</p>';
+      titleBox.textContent = '';
+      const items = [];
+      for (const url of urls) {
+        const { id, hash } = parseVimeoUrl(url);
+        if (!id) continue;
+        try {
+          const data = await (await fetch(
+            `https://vimeo.com/api/oembed.json?url=${encodeURIComponent(url)}`
+          )).json();
+          const thumb = document.createElement('div');
+          thumb.className = 'thumbnail';
+          thumb.dataset.title = data.title;
+          thumb.innerHTML = `
+            <img src="${data.thumbnail_url}" alt="${data.title}" />
+            <p>${data.title}</p>`;
+          thumb.onclick = () => playVideo(id, hash, thumb);
+          gallery.appendChild(thumb);
+          items.push({ id, hash, thumb });
+        } catch {}
+      }
+      prevBtn.style.display = nextBtn.style.display = items.length > 5 ? 'block' : 'none';
+      prevBtn.onclick = () => gallery.scrollBy({ left: -gallery.clientWidth, behavior: 'smooth' });
+      nextBtn.onclick = () => gallery.scrollBy({ left: gallery.clientWidth, behavior: 'smooth' });
+      if (items.length) playVideo(items[0].id, items[0].hash, items[0].thumb);
+    }
+
+    // Helpers
+    function parseVimeoUrl(url) {
+      try {
+        const u = new URL(url);
+        const seg = u.pathname.split('/').filter(Boolean);
+        let hash = null, id = seg[0];
+        if (seg[1] && /^[0-9A-F]+$/i.test(seg[1])) hash = seg[1];
+        if (u.searchParams.has('h')) hash = u.searchParams.get('h');
+        return { id, hash };
+      } catch {
+        return {};
+      }
+    }
+
+    function playVideo(id, hash, thumb) {
+      document.querySelectorAll('.thumbnail.active')
+              .forEach(el => el.classList.remove('active'));
+      thumb.classList.add('active');
+      titleBox.textContent = thumb.dataset.title;
+      let src = `https://player.vimeo.com/video/${id}?autoplay=1&badge=0`;
+      if (hash) src += `&h=${hash}`;
+      player.innerHTML = `<iframe src="${src}" allow="autoplay; fullscreen" allowfullscreen></iframe>`;
+    }
+  </script>
+</body>
+</html>
