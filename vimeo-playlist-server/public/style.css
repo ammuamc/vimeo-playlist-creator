@@ -1,58 +1,119 @@
-/* Controls */
+@import url('https://fonts.googleapis.com/css2?family=Anton&display=swap');
+
+/* Improve font rendering for crispness */
+body * {
+  text-rendering: geometricPrecision;
+}
+
+/* Page Title styling */
+#pageTitle {
+  color: #f04f24;
+  text-transform: uppercase;
+  font-family: 'Anton', sans-serif;
+  font-size: 8em;
+  line-height: 1;
+  position: relative;
+  left: -15px;
+}
+
+/* Reset & layout */
 body {
   font-family: Arial, sans-serif;
   margin: 0;
   padding: 0;
   background: #f4f4f4;
 }
+.header {
+  text-align: center;
+  padding: 10px 0;
+  background: #fff;
+  border-bottom: 1px solid #ddd;
+}
+
+/* Controls area */
 #controls {
   max-width: 800px;
   margin: 20px auto;
   padding: 0 10px;
 }
-#videoLinks {
-  width: 100%;
-  height: 100px;
-  padding: 10px;
-  box-sizing: border-box;
+
+/* Inputs */
+.input-url {
+  width: 75%;
+  padding: 8px;
   border: 1px solid #ccc;
   border-radius: 4px;
 }
-#loadButton {
-  display: block;
-  margin: 10px 0;
-  padding: 10px 20px;
-  font-size: 1em;
-  cursor: pointer;
-  border: none;
-  background: #0073e6;
-  color: #fff;
+.input-area {
+  width: 100%;
+  height: 100px;
+  padding: 8px;
+  box-sizing: border-box;
+  border: 1px solid #ccc;
   border-radius: 4px;
-}
-#shareLinkContainer {
   margin: 10px 0;
 }
 
-/* Layout: stack */
+/* Shared “after save” text */
+.share {
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+/* Unified button styling */
+.btn {
+  font-family: 'Anton', sans-serif;
+  background: #fff;
+  color: #f04f24;
+  border: 1px solid #f04f24;
+  border-radius: 9999px;
+  padding: 8px 24px;
+  font-size: 1.125em;
+  line-height: 22px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+  margin-right: 8px;
+}
+.btn:hover {
+  background: #f04f24;
+  color: #fff;
+}
+
+/* Navigation arrows */
+.btn-nav {
+  background: none;
+  border: none;
+  color: #f04f24;
+  font-size: 24px;
+  cursor: pointer;
+}
+.btn-nav:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+/* Content stacking */
 .content {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 10px;
-  padding: 0;
+  padding-bottom: 20px;
 }
 
-/* Header logo */
+/* Logo */
 #headerLogo {
   width: 15vw;
-  padding: 2% 0;
-  margin: 0 0 5px;
+  margin-top: 2%;
+  margin-bottom: 5px;
 }
 
 /* Video player */
 .player-container {
   width: 75vw;
-  margin-bottom: 5px;
 }
 .player-container iframe {
   width: 100%;
@@ -61,7 +122,7 @@ body {
   display: block;
 }
 
-/* Thumbnails slider */
+/* Thumbnail slider */
 .slider-container {
   display: flex;
   align-items: center;
@@ -77,7 +138,6 @@ body {
   background: #fff;
   border-radius: 4px;
 }
-
 .thumbnail {
   flex: 0 0 auto;
   width: 120px;
@@ -89,30 +149,15 @@ body {
 }
 .thumbnail:hover,
 .thumbnail.active {
-  border-color: #0073e6;
+  border-color: #f04f24;
 }
 .thumbnail img {
   width: 100%;
-  height: auto;
   display: block;
   border-radius: 4px;
 }
 .thumbnail p {
   text-align: center;
   font-size: 9px;
-  margin: 5px 0 0;
-}
-
-/* Arrow buttons */
-#prevBtn,
-#nextBtn {
-  background: none;
-  border: none;
-  font-size: 2em;
-  cursor: pointer;
-}
-#prevBtn:disabled,
-#nextBtn:disabled {
-  opacity: 0.3;
-  cursor: default;
+  margin-top: 5px;
 }

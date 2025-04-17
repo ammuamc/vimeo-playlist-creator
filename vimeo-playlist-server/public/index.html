@@ -4,22 +4,41 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Vimeo Playlist Creator</title>
+  <!-- Google Fonts: Anton -->
+<link
+href="https://fonts.googleapis.com/css2?family=Anton&display=swap"
+rel="stylesheet"
+/>
+
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <!-- Page Title to distinguish modes -->
-  <header style="text-align:center; padding:10px 0; background:#fff; border-bottom:1px solid #ddd;">
-    <h1 id="pageTitle" style="margin:0; font-size:1.5em;">Vimeo Playlist Builder</h1>
+  <!-- Page Title for Builder Mode -->
+  <header class="header">
+    <h1 id="pageTitle">Vimeo Playlist Builder</h1>
   </header>
 
   <div id="controls">
-    <input type="text" id="playlistUrlInput" placeholder="Paste playlist URL here" style="width:75%; padding:8px;" />
-    <button id="loadUrlButton" style="padding:8px 16px; margin-left:5px;">Load from URL</button>
-    <br /><br />
-    <textarea id="videoLinks" placeholder="Paste Vimeo URLs, one per line"></textarea>
-    <button id="loadButton">Load Videos</button>
-    <button id="saveButton" style="margin-left:10px;">Save Playlist</button>
-    <div id="shareLinkContainer" style="display:none;"></div>
+    <input
+      type="text"
+      id="playlistUrlInput"
+      class="input-url"
+      placeholder="Paste playlist URL here"
+    />
+    <button id="loadUrlButton" class="btn">Load from URL</button>
+
+    <br/><br/>
+
+    <textarea
+      id="videoLinks"
+      class="input-area"
+      placeholder="Paste Vimeo URLs, one per line"
+    ></textarea>
+    <button id="loadButton" class="btn">Load Videos</button>
+    <button id="saveButton" class="btn">Save Playlist</button>
+
+    <!-- only shown after save -->
+    <div id="shareLinkContainer" class="share"></div>
   </div>
 
   <div class="content">
@@ -28,30 +47,30 @@
       <p class="placeholder">Select a video to play</p>
     </div>
     <div class="slider-container">
-      <button id="prevBtn" style="display:none;">&#9664;</button>
+      <button id="prevBtn" class="btn-nav">&#9664;</button>
       <div class="video-gallery" id="gallery"></div>
-      <button id="nextBtn" style="display:none;">&#9654;</button>
+      <button id="nextBtn" class="btn-nav">&#9654;</button>
     </div>
   </div>
 
   <script>
-    const controls = document.getElementById('controls');
+    const controls         = document.getElementById('controls');
     const playlistUrlInput = document.getElementById('playlistUrlInput');
-    const loadUrlButton = document.getElementById('loadUrlButton');
-    const videoLinks = document.getElementById('videoLinks');
-    const loadButton = document.getElementById('loadButton');
-    const saveButton = document.getElementById('saveButton');
-    const shareContainer = document.getElementById('shareLinkContainer');
-    const gallery = document.getElementById('gallery');
-    const player = document.getElementById('player');
-    const prevBtn = document.getElementById('prevBtn');
-    const nextBtn = document.getElementById('nextBtn');
+    const loadUrlButton    = document.getElementById('loadUrlButton');
+    const videoLinks       = document.getElementById('videoLinks');
+    const loadButton       = document.getElementById('loadButton');
+    const saveButton       = document.getElementById('saveButton');
+    const shareContainer   = document.getElementById('shareLinkContainer');
+    const gallery          = document.getElementById('gallery');
+    const player           = document.getElementById('player');
+    const prevBtn          = document.getElementById('prevBtn');
+    const nextBtn          = document.getElementById('nextBtn');
 
-    // On page load, check for existing playlistId
+    // On page load, handle playlistId and videos query parameters
     document.addEventListener('DOMContentLoaded', () => {
       const params = new URLSearchParams(window.location.search);
       if (params.has('playlistId')) {
-        // Finished playlist view by ID
+        // Finished playlist mode
         document.querySelector('header').style.display = 'none';
         controls.style.display = 'none';
         const id = params.get('playlistId');
@@ -59,37 +78,56 @@
           .then(res => res.json())
           .then(data => loadVideos(data.urls));
       } else if (params.has('videos')) {
-        // Builder mode: populate textarea but keep controls visible
-        const urls = params.get('videos').split(';').map(u => decodeURIComponent(u));
+        // Preload builder with videos list
+        const urls = params.get('videos').split(';').map(decodeURIComponent);
         videoLinks.value = urls.join('\n');
       }
     });
 
-    // Load from URL: populate textarea and trigger load
-    loadUrlButton.addEventListener('click', () => {
+    // Load from URL: support both videos and playlistId
+    loadUrlButton.addEventListener('click', async () => {
       try {
         const u = new URL(playlistUrlInput.value.trim());
-        const raw = u.searchParams.get('videos');
-        if (!raw) throw new Error();
-        const urls = raw.split(';').map(decodeURIComponent);
-        videoLinks.value = urls.join('\n');
-        loadButton.click();
+        let urls;
+
+        if (u.searchParams.has('videos')) {
+          urls = u.searchParams.get('videos').split(';').map(decodeURIComponent);
+          videoLinks.value = urls.join('\n');
+          loadButton.click();
+
+        } else if (u.searchParams.has('playlistId')) {
+          const id = u.searchParams.get('playlistId');
+          const res = await fetch(`/api/playlists/${id}`);
+          if (!res.ok) throw new Error();
+          const data = await res.json();
+          urls = data.urls;
+          videoLinks.value = urls.join('\n');
+          loadVideos(urls);
+        } else {
+          throw new Error();
+        }
       } catch {
         alert('Invalid playlist URL');
       }
     });
 
-    // Load Videos: render thumbnails only
+    // Load Videos: generate thumbnails only
     loadButton.addEventListener('click', () => {
-      const urls = videoLinks.value.split('\n').map(l => l.trim()).filter(Boolean);
+      const urls = videoLinks.value
+        .split('\n')
+        .map(l => l.trim())
+        .filter(Boolean);
       loadVideos(urls);
     });
 
-    // Save Playlist: POST and show short ?playlistId= link
+    // Save Playlist: POST to server and show short playlistId link
     saveButton.addEventListener('click', async () => {
       const name = prompt('Name this playlist');
       if (!name) return;
-      const urls = videoLinks.value.split('\n').map(l => l.trim()).filter(Boolean);
+      const urls = videoLinks.value
+        .split('\n')
+        .map(l => l.trim())
+        .filter(Boolean);
       const res = await fetch('/api/playlists', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -97,29 +135,28 @@
       });
       const { id } = await res.json();
       const link = `${location.origin}/?playlistId=${id}`;
-      shareContainer.innerHTML = `
-        <p>Saved! Share this playlist: <a href="${link}" target="_blank">${link}</a></p>
-      `;
+      shareContainer.innerHTML = `<p>Saved! Share this playlist: <a href="${link}" target="_blank">${link}</a></p>`;
       shareContainer.style.display = 'block';
     });
 
-    // Core loader: thumbnails & autoplay
+    // Core: load thumbnails and autoplay first video
     async function loadVideos(urls) {
       gallery.innerHTML = '';
-      player.innerHTML = '<p class="placeholder">Loading...</p>';
+      player.innerHTML  = '<p class="placeholder">Loading...</p>';
       const items = [];
       for (const url of urls) {
         const { id, hash } = parseVimeoUrl(url);
         if (!id) continue;
         try {
-          const resp = await fetch(`https://vimeo.com/api/oembed.json?url=${encodeURIComponent(url)}`);
+          const resp = await fetch(
+            `https://vimeo.com/api/oembed.json?url=${encodeURIComponent(url)}`
+          );
           const data = await resp.json();
           const thumbDiv = document.createElement('div');
           thumbDiv.className = 'thumbnail';
-          thumbDiv.innerHTML = `
-            <img src="${data.thumbnail_url}" alt="${data.title}" />
-            <p style="font-size:9px;">${data.title}</p>
-          `;
+          thumbDiv.innerHTML =
+            `<img src="${data.thumbnail_url}" alt="${data.title}" />` +
+            `<p style="font-size:9px;">${data.title}</p>`;
           thumbDiv.addEventListener('click', () => playVideo(id, hash, thumbDiv));
           gallery.appendChild(thumbDiv);
           items.push({ id, hash, thumbDiv });
@@ -131,10 +168,13 @@
       } else {
         prevBtn.style.display = nextBtn.style.display = 'none';
       }
-      prevBtn.onclick = () => gallery.scrollBy({ left: -gallery.clientWidth, behavior: 'smooth' });
-      nextBtn.onclick = () => gallery.scrollBy({ left: gallery.clientWidth, behavior: 'smooth' });
-      // autoplay first
-      if (items.length) playVideo(items[0].id, items[0].hash, items[0].thumbDiv);
+      prevBtn.onclick = () =>
+        gallery.scrollBy({ left: -gallery.clientWidth, behavior: 'smooth' });
+      nextBtn.onclick = () =>
+        gallery.scrollBy({ left: gallery.clientWidth, behavior: 'smooth' });
+      if (items.length) {
+        playVideo(items[0].id, items[0].hash, items[0].thumbDiv);
+      }
     }
 
     function parseVimeoUrl(url) {
@@ -151,7 +191,9 @@
     }
 
     function playVideo(id, hash, thumbDiv) {
-      document.querySelectorAll('.thumbnail.active').forEach(el => el.classList.remove('active'));
+      document
+        .querySelectorAll('.thumbnail.active')
+        .forEach(el => el.classList.remove('active'));
       thumbDiv.classList.add('active');
       let src = `https://player.vimeo.com/video/${id}?autoplay=1&badge=0`;
       if (hash) src += `&h=${hash}`;
