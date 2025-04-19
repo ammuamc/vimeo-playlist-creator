@@ -14,6 +14,11 @@ body * {
   text-rendering: geometricPrecision;
 }
 
+/* Hide player and thumbnails by default */
+.video-row, .thumbnails-row {
+  display: none;
+}
+
 /* Builder header (white) */
 .header {
   text-align: center;
@@ -118,6 +123,9 @@ body * {
   min-width: 100px;
   display: inline-block;
 }
+.current-title {
+  color: #fff;
+}
 
 /* Main container for all content rows */
 .main-container {
@@ -125,6 +133,8 @@ body * {
   flex-direction: column;
   flex: 1;
   overflow: hidden;
+  display: none;
+  background-color: #18332f;
   /* Masonry-like tight packing */
   gap: 0;
 }
@@ -143,7 +153,7 @@ body * {
 /* Video row */
 .video-row {
   flex: 1 1 auto;
-  background: #fff;
+  background-color: #18332f;
   min-height: 0; /* Important for Firefox */
   display: flex;
   flex-direction: column;
@@ -175,6 +185,7 @@ body * {
   line-height: 1.5;
   margin: 0;
   padding: 20px;
+  color: #fff;
 }
 
 /* Thumbnails row - now directly attached to video player */
@@ -470,4 +481,9 @@ body * {
 .notification-area {
   margin-top: 15px;
   width: 100%;
+}
+/* Hide the main content area by default */
+.main-container {
+  display: none;
+  background-color: #18332f;
 }

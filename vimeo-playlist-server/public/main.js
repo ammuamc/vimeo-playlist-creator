@@ -21,6 +21,9 @@ const shareBtn         = document.getElementById('shareBtn');
 const currentDuration  = document.getElementById('currentDuration');
 const notificationArea = document.getElementById('notificationArea');
 const loadingIndicator = document.getElementById('loadingIndicator');
+const videoRow         = document.querySelector('.video-row');
+const thumbnailsRow    = document.querySelector('.thumbnails-row');
+const mainContainer    = document.querySelector('.main-container');
 
 // Store loaded video IDs to check for duplicates
 let loadedVideoIds = new Set();
@@ -131,6 +134,11 @@ function initDragAndDrop() {
 function playVideo(id, hash, thumb) {
   // Show loading indicator
   showLoading('Loading video...');
+  
+  // Make sure the player, thumbnails, and main container are visible
+  videoRow.style.display = 'flex';
+  thumbnailsRow.style.display = 'block';
+  mainContainer.style.display = 'flex';
   
   document.querySelectorAll('.thumbnail.active')
           .forEach(el => el.classList.remove('active'));
@@ -244,6 +252,10 @@ async function loadVideos(urls) {
   nextBtn.onclick = () => gallery.scrollBy({ left: gallery.clientWidth, behavior: 'smooth' });
   
   if (window.playlistItems.length) {
+    // Show the player, thumbnails, and main container when we have videos
+    videoRow.style.display = 'flex';
+    thumbnailsRow.style.display = 'block';
+    mainContainer.style.display = 'flex';
     playVideo(
       window.playlistItems[0].id, 
       window.playlistItems[0].hash, 
@@ -269,6 +281,9 @@ async function loadVideos(urls) {
 
 // On page load
 document.addEventListener('DOMContentLoaded', () => {
+  // Hide main container initially
+  mainContainer.style.display = 'none';
+  
   const params = new URLSearchParams(window.location.search);
   if (params.has('playlistId')) {
     document.querySelector('header.header').style.display = 'none'; // Only hide the builder header
