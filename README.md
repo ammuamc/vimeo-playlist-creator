@@ -107,30 +107,4 @@ Render / Railway / Fly.io for Node + frontend
 
 Vercel (frontend-only, but backend will not work unless hosted separately)
 
-🧑‍💻 Credits
-Built with ❤️ by the Ammunition Team
-Project maintained by: @jon.hayes
 
-📄 License
-MIT — free to use, modify, and share.
-
-yaml
-Copy
-Edit
-
----
-
-## ✅ Next Step
-
-Drop that into a file called `README.md` in your root directory:
-
-```bash
-notepad README.md
-Paste it, save it, then run:
-
-bash
-Copy
-Edit
-git add README.md
-git commit -m "Added project README"
-git push origin master
