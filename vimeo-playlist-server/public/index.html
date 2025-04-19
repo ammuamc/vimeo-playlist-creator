@@ -7,6 +7,10 @@
   <!-- Google Fonts: Anton -->
   <link href="https://fonts.googleapis.com/css2?family=Anton&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
+  <!-- Sortable.js for drag-and-drop functionality -->
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+  <!-- Responsive layout enhancement -->
+  <script src="responsive.js"></script>
 </head>
 <body>
   <!-- Builder Header -->
@@ -38,33 +42,49 @@
     <div id="shareLinkContainer" class="share"></div>
   </div>
 
-  <!-- Player & Thumbnails -->
+  <!-- Flexbox-based responsive layout -->
   <div class="content">
-    <!-- Full‑width white logo row -->
-    <div class="logo-row">
+    <!-- White header with logo -->
+    <div class="header-container">
       <img src="images/logo.png" alt="Logo" id="headerLogo" />
     </div>
 
-    <div id="player" class="player-container">
-      <p class="placeholder">Select a video to play</p>
+    <!-- Main content container with nested rows -->
+    <div class="main-container">
+      <!-- Combined video and thumbnails container -->
+      <div class="video-content-container">
+        <!-- Video player section -->
+        <div class="video-row">
+          <div id="player" class="player-container">
+            <p class="placeholder">Select a video to play</p>
+          </div>
+        </div>
+        
+        <!-- Thumbnails section - directly below video -->
+        <div class="thumbnails-row">
+          <div id="currentTitle" class="current-title"></div>
+          <div class="slider-container">
+            <button id="prevBtn" class="btn-nav">&#9664;</button>
+            <div class="video-gallery" id="gallery"></div>
+            <button id="nextBtn" class="btn-nav">&#9654;</button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Footer row - additional controls -->
+      <div class="footer-row">
+        <div class="footer-content">
+          <div class="video-info">
+            <span id="currentDuration" class="duration"></span>
+            <span id="videoCount" class="count"></span>
+          </div>
+          <div class="controls">
+            <button id="fullscreenBtn" class="control-btn">Fullscreen</button>
+            <button id="shareBtn" class="control-btn">Share</button>
+          </div>
+        </div>
+      </div>
     </div>
-
-    <!-- Current video title, full‑width -->
-    <div id="currentTitle" class="current-title"></div>
-
-    <!-- Thumbnails slider, full‑width background -->
-    <div class="slider-container">
-      <button id="prevBtn" class="btn-nav">&#9664;</button>
-      <div class="video-gallery" id="gallery"></div>
-      <button id="nextBtn" class="btn-nav">&#9654;</button>
-    </div>
-
-    <!-- Separator & Saved Playlists -->
-    <hr class="separator" />
-    <section id="savedPlaylists">
-      <h2>Saved Playlists</h2>
-      <ul id="playlistList"></ul>
-    </section>
   </div>
 
   <script>
@@ -80,22 +100,15 @@
     const prevBtn          = document.getElementById('prevBtn');
     const nextBtn          = document.getElementById('nextBtn');
     const titleBox         = document.getElementById('currentTitle');
-    const playlistUl       = document.getElementById('playlistList');
+    const fullscreenBtn    = document.getElementById('fullscreenBtn');
+    const shareBtn         = document.getElementById('shareBtn');
+    const currentDuration  = document.getElementById('currentDuration');
 
+    // On page load, handle playlistId or videos parameters
     document.addEventListener('DOMContentLoaded', () => {
-      const params     = new URLSearchParams(window.location.search);
-      const isFinished = params.has('playlistId') || params.has('videos');
-
-      // hide saved section on finished view
-      if (isFinished) {
-        const sep   = document.querySelector('.separator');
-        const saved = document.getElementById('savedPlaylists');
-        if (sep)   sep.style.display   = 'none';
-        if (saved) saved.style.display = 'none';
-      }
-
+      const params = new URLSearchParams(window.location.search);
       if (params.has('playlistId')) {
-        document.querySelector('header').style.display = 'none';
+        document.querySelector('header.header').style.display = 'none'; // Only hide the builder header
         controls.style.display = 'none';
         fetch(`/api/playlists/${params.get('playlistId')}`)
           .then(r => r.json())
@@ -104,23 +117,9 @@
         const urls = params.get('videos').split(';').map(decodeURIComponent);
         videoLinks.value = urls.join('\n');
       }
-
-      if (!isFinished) {
-        fetch('/api/playlists')
-          .then(r => r.json())
-          .then(list => {
-            if (!list.length) {
-              playlistUl.innerHTML = '<li class="empty">No saved playlists yet.</li>';
-            } else {
-              playlistUl.innerHTML = list.map(pl => `
-                <li><a href="?playlistId=${pl.id}">${pl.name}</a></li>
-              `).join('');
-            }
-          })
-          .catch(console.error);
-      }
     });
 
+    // Load-from-URL handler
     loadUrlButton.addEventListener('click', async () => {
       try {
         const u = new URL(playlistUrlInput.value.trim());
@@ -132,30 +131,43 @@
         } else if (u.searchParams.has('playlistId')) {
           const res = await fetch(`/api/playlists/${u.searchParams.get('playlistId')}`);
           if (!res.ok) throw new Error();
-          const data = await res.json();
-          loadVideos(data.urls);
+          urls = (await res.json()).urls;
+          
+          // Update the textarea with the URLs from the playlist
+          videoLinks.value = urls.join('\n');
+          
+          loadVideos(urls);
         } else throw new Error();
       } catch {
         alert('Invalid playlist URL');
       }
     });
 
+    // Load button
     loadButton.addEventListener('click', () => {
       const urls = videoLinks.value.split('\n').map(l => l.trim()).filter(Boolean);
       loadVideos(urls);
     });
 
+    // Save button
     saveButton.addEventListener('click', async () => {
-      const name = prompt('Name this playlist'); if (!name) return;
-      const urls = videoLinks.value.split('\n').map(l => l.trim()).filter(Boolean);
+      const name = prompt('Name this playlist'); 
+      if (!name) return;
+      
+      // Use the ordered URLs from playlistItems instead of parsing the textarea
+      const urls = window.playlistItems 
+                 ? window.playlistItems.map(item => item.url)
+                 : videoLinks.value.split('\n').map(l => l.trim()).filter(Boolean);
+      
       const res = await fetch('/api/playlists', {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ name, urls })
       });
+      
       const { id } = await res.json();
       shareContainer.innerHTML = `
-        <p>Saved! Share this playlist:
+        <p>Saved! Share this playlist: 
           <a href="${location.origin}/?playlistId=${id}" target="_blank">
             ${location.origin}/?playlistId=${id}
           </a>
@@ -163,11 +175,45 @@
       shareContainer.style.display = 'block';
     });
 
+    // Modified function to play videos with flexbox layout
+    function playVideo(id, hash, thumb) {
+      document.querySelectorAll('.thumbnail.active')
+              .forEach(el => el.classList.remove('active'));
+      thumb.classList.add('active');
+      titleBox.textContent = thumb.dataset.title;
+      let src = `https://player.vimeo.com/video/${id}?autoplay=1&badge=0`;
+      if (hash) src += `&h=${hash}`;
+      
+      // Create iframe with responsive styling
+      player.innerHTML = `<iframe 
+        src="${src}" 
+        allow="autoplay; fullscreen" 
+        allowfullscreen></iframe>`;
+      
+      // Scroll the active thumbnail into view
+      setTimeout(() => {
+        thumb.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      }, 100);
+      
+      // Update duration in footer (placeholder - would need Vimeo API for actual duration)
+      if (currentDuration) {
+        currentDuration.textContent = 'Playing';
+      }
+    }
+
+    // Core loader with drag-and-drop support
     async function loadVideos(urls) {
       gallery.innerHTML = '';
-      player.innerHTML  = '<p class="placeholder">Loading...</p>';
+      player.innerHTML = '<p class="placeholder">Select a video to play</p>';
       titleBox.textContent = '';
-      const items = [];
+      
+      // Store the complete video data for later use
+      window.playlistItems = [];
+      
+      // Check if we're in builder or viewer mode
+      const params = new URLSearchParams(window.location.search);
+      const isBuilderMode = !params.has('playlistId');
+      
       for (const url of urls) {
         const { id, hash } = parseVimeoUrl(url);
         if (!id) continue;
@@ -175,23 +221,86 @@
           const data = await (await fetch(
             `https://vimeo.com/api/oembed.json?url=${encodeURIComponent(url)}`
           )).json();
+          
           const thumb = document.createElement('div');
           thumb.className = 'thumbnail';
           thumb.dataset.title = data.title;
+          thumb.dataset.vimeoId = id;
+          thumb.dataset.vimeoHash = hash || '';
+          thumb.dataset.vimeoUrl = url; // Store the original URL
+          
+          // Only add drag handles in builder mode
+          const dragHandleHtml = isBuilderMode ? '<div class="drag-handle">↕</div>' : '';
+          
           thumb.innerHTML = `
             <img src="${data.thumbnail_url}" alt="${data.title}" />
-            <p>${data.title}</p>`;
-          thumb.onclick = () => playVideo(id, hash, thumb);
+            <p>${data.title}</p>
+            ${dragHandleHtml}`;
+          
+          thumb.onclick = (e) => {
+            // Don't trigger video play when dragging
+            if (e.target.className === 'drag-handle') return;
+            playVideo(id, hash, thumb);
+          };
+          
           gallery.appendChild(thumb);
-          items.push({ id, hash, thumb });
-        } catch {}
+          window.playlistItems.push({ id, hash, thumb, url });
+        } catch (error) {
+          console.error(`Error loading video ${url}:`, error);
+        }
       }
-      prevBtn.style.display = nextBtn.style.display = items.length > 5 ? 'block' : 'none';
+      
+      prevBtn.style.display = nextBtn.style.display = window.playlistItems.length > 5 ? 'block' : 'none';
       prevBtn.onclick = () => gallery.scrollBy({ left: -gallery.clientWidth, behavior: 'smooth' });
       nextBtn.onclick = () => gallery.scrollBy({ left: gallery.clientWidth, behavior: 'smooth' });
-      if (items.length) playVideo(items[0].id, items[0].hash, items[0].thumb);
+      
+      if (window.playlistItems.length) {
+        playVideo(
+          window.playlistItems[0].id, 
+          window.playlistItems[0].hash, 
+          window.playlistItems[0].thumb
+        );
+      }
+      
+      // Initialize drag-and-drop, but only in builder mode
+      if (isBuilderMode) {
+        initDragAndDrop();
+      }
     }
 
+    // Initialize drag-and-drop functionality
+    function initDragAndDrop() {
+      // Initialize Sortable on the gallery
+      const sortable = new Sortable(gallery, {
+        animation: 150,
+        handle: '.drag-handle',
+        onEnd: function(evt) {
+          // Update the playlistItems array to match the new DOM order
+          const newPlaylistItems = [];
+          document.querySelectorAll('.thumbnail').forEach(thumb => {
+            const id = thumb.dataset.vimeoId;
+            const hash = thumb.dataset.vimeoHash;
+            const url = thumb.dataset.vimeoUrl;
+            newPlaylistItems.push({ id, hash, thumb, url });
+          });
+          window.playlistItems = newPlaylistItems;
+          
+          // Update the textarea to reflect the new order
+          updateVideoLinksTextarea();
+        }
+      });
+    }
+
+    // Update textarea when videos are reordered
+    function updateVideoLinksTextarea() {
+      // Only update if we're in builder mode
+      if (videoLinks) {
+        const urls = window.playlistItems.map(item => item.url);
+        videoLinks.value = urls.join('\n');
+      }
+    }
+
+    // Helpers
     function parseVimeoUrl(url) {
       try {
         const u = new URL(url);
@@ -204,14 +313,74 @@
         return {};
       }
     }
-
-    function playVideo(id, hash, thumb) {
-      document.querySelectorAll('.thumbnail.active').forEach(el => el.classList.remove('active'));
-      thumb.classList.add('active');
-      titleBox.textContent = thumb.dataset.title;
-      let src = `https://player.vimeo.com/video/${id}?autoplay=1&badge=0`;
-      if (hash) src += `&h=${hash}`;
-      player.innerHTML = `<iframe src="${src}" allow="autoplay; fullscreen" allowfullscreen></iframe>`;
+    
+    // Listen for window resize and adjust layout if needed
+    window.addEventListener('resize', function() {
+      // If we have an active thumbnail, make sure it's visible
+      const activeThumb = document.querySelector('.thumbnail.active');
+      if (activeThumb) {
+        setTimeout(() => {
+          activeThumb.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        }, 100);
+      }
+    });
+    
+    // Fullscreen button functionality
+    if (fullscreenBtn) {
+      fullscreenBtn.addEventListener('click', function() {
+        const iframe = player.querySelector('iframe');
+        if (iframe) {
+          if (document.fullscreenElement) {
+            document.exitFullscreen();
+          } else {
+            iframe.requestFullscreen().catch(err => {
+              console.error(`Error attempting to enable fullscreen: ${err.message}`);
+            });
+          }
+        }
+      });
+    }
+    
+    // Share button functionality
+    if (shareBtn) {
+      shareBtn.addEventListener('click', function() {
+        const url = window.location.href;
+        
+        // Try to use the Web Share API if available
+        if (navigator.share) {
+          navigator.share({
+            title: document.title,
+            url: url
+          }).catch(err => {
+            console.error('Error sharing:', err);
+            // Fallback to clipboard
+            copyToClipboard(url);
+          });
+        } else {
+          // Fallback to clipboard
+          copyToClipboard(url);
+        }
+      });
+    }
+    
+    // Helper function to copy text to clipboard
+    function copyToClipboard(text) {
+      // Create a temporary input element
+      const input = document.createElement('input');
+      input.style.position = 'fixed';
+      input.style.opacity = 0;
+      input.value = text;
+      document.body.appendChild(input);
+      
+      // Select and copy
+      input.select();
+      document.execCommand('copy');
+      
+      // Clean up
+      document.body.removeChild(input);
+      
+      // Notify user
+      alert('URL copied to clipboard!');
     }
   </script>
 </body>

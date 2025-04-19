@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Vimeo Playlist Creator - Test</title>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Player & Thumbnails - Completely restructured layout -->
+  <div class="content">
+    <!-- Logo row -->
+    <div class="logo-row">
+      <img src="images/logo.png" alt="Logo" id="headerLogo" />
+    </div>
+
+    <!-- Player wrapper -->
+    <div class="player-wrapper">
+      <div id="player" class="player-container">
+        <!-- Simulated iframe -->
+        <div style="width: 100%; height: 60vh; background-color: #333; color: white; display: flex; align-items: center; justify-content: center;">
+          Simulated Video Player
+        </div>
+      </div>
+    </div>
+    
+    <!-- Orange section with mask to cover any gap -->
+    <div class="orange-section">
+      <!-- This element masks any potential gap -->
+      <div class="orange-mask"></div>
+      
+      <!-- Title and gallery - positioned on top of the mask -->
+      <div id="currentTitle" class="current-title">Test Video Title</div>
+      <div class="slider-container">
+        <button id="prevBtn" class="btn-nav">&#9664;</button>
+        <div class="video-gallery" id="gallery">
+          <!-- Simulated thumbnails -->
+          <div class="thumbnail active">
+            <div style="width: 100%; height: 70px; background-color: #ddd;"></div>
+            <p>Video 1</p>
+          </div>
+          <div class="thumbnail">
+            <div style="width: 100%; height: 70px; background-color: #ddd;"></div>
+            <p>Video 2</p>
+          </div>
+          <div class="thumbnail">
+            <div style="width: 100%; height: 70px; background-color: #ddd;"></div>
+            <p>Video 3</p>
+          </div>
+        </div>
+        <button id="nextBtn" class="btn-nav">&#9654;</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
