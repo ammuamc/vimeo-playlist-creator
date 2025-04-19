@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vimeo Playlist</title>
+  <link rel="stylesheet" href="/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+  <script src="/responsive.js"></script>
+  <!-- Vimeo Player API -->
+  <script src="https://player.vimeo.com/api/player.js"></script>
+</head>
+<body>
+  <!-- Logo row moved above the title -->
+  <div class="header-container">
+    <img src="/images/logo.png" alt="Logo" id="headerLogo" />
+  </div>
+
+  <!-- Header with dynamic title -->
+  <header class="header">
+    <h1 id="playlistTitle">Vimeo Playlist</h1>
+  </header>
+
+  <div class="content">
+    <div class="video-content-container">
+      <div class="video-row">
+        <div id="player" class="player-container">
+          <p class="placeholder">Loading…</p>
+        </div>
+      </div>
+      <div class="thumbnails-row">
+        <div id="currentTitle" class="current-title"></div>
+        <div class="slider-container">
+          <button id="prevBtn" class="btn-nav">◄</button>
+          <div class="video-gallery" id="gallery"></div>
+          <button id="nextBtn" class="btn-nav">►</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="/viewer.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const match = window.location.pathname.match(/^\/playlist\/(.+)$/);
+      const id = match && match[1];
+      const titleEl = document.getElementById('playlistTitle');
+      if (!id) {
+        titleEl.textContent = 'Playlist Not Found';
+        document.getElementById('player').innerHTML = '<p>No ID provided.</p>';
+        return;
+      }
+      fetch(`/api/playlists/${id}`)
+        .then(res => {
+          if (!res.ok) throw new Error('Network response was not ok');
+          return res.json();
+        })
+        .then(data => {
+          // Set the header to the playlist name
+          titleEl.textContent = data.name;
+          // Remove placeholder and initialize videos
+          document.querySelector('.placeholder')?.remove();
+          loadVideos(data.urls);
+        })
+        .catch(err => {
+          console.error(err);
+          titleEl.textContent = 'Error Loading Playlist';
+          document.getElementById('player').innerHTML = '<p>Failed to load playlist.</p>';
+        });
+    });
+  </script>
+</body>
+</html>

@@ -8,7 +8,8 @@ document.addEventListener('DOMContentLoaded', function() {
   const videoRow = document.querySelector('.video-row');
   const thumbnailsRow = document.querySelector('.thumbnails-row');
   const videoContentContainer = document.querySelector('.video-content-container');
-  const headerContainer = document.querySelector('.header-container');
+  // Use builder header-container or viewer header
+  const headerContainer = document.querySelector('.header-container') || document.querySelector('header.header');
   const footerRow = document.querySelector('.footer-row');
   const videoCount = document.getElementById('videoCount');
   
@@ -19,7 +20,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const viewportWidth = window.innerWidth;
     
     // Get header height
-    const headerHeight = headerContainer.offsetHeight;
+    const headerHeight = headerContainer ? headerContainer.offsetHeight : 0;
     
     // Footer height is fixed at 40px
     const footerHeight = 40;
@@ -76,8 +77,9 @@ document.addEventListener('DOMContentLoaded', function() {
   if (videoCount) {
     const updateVideoCount = () => {
       const totalVideos = document.querySelectorAll('.thumbnail').length;
-      const activeIndex = document.querySelector('.thumbnail.active') ? 
-        Array.from(document.querySelectorAll('.thumbnail')).findIndex(el => el.classList.contains('active')) + 1 : 0;
+      const activeIndex = document.querySelector('.thumbnail.active') 
+        ? Array.from(document.querySelectorAll('.thumbnail')).findIndex(el => el.classList.contains('active')) + 1 
+        : 0;
       
       if (totalVideos > 0) {
         videoCount.textContent = `${activeIndex} / ${totalVideos}`;

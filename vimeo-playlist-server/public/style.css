@@ -1,35 +1,39 @@
-@import url('https://fonts.googleapis.com/css2?family=Anton&display=swap');
-
-/* Make the orange bleed all the way down */
-body {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  padding: 0;
-  background: #f04f24;
-  min-height: 100vh;
+:root {
+  /* Master Palette */
+  --color-primary: #f04f24;
+  --color-secondary: #333;
+  --color-bg: #fff;
+  --color-bg-dark: #c8c8c8;
+  --color-border: #ff0000;
+  --color-input-border: #794a3f;
 }
 
-/* Crisp text on all elements */
+@import url('https://fonts.googleapis.com/css2?family=Anton&display=swap');
+
+/* Global resets */
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-primary);
+  font-family: Arial, sans-serif;
+}
 body * {
   text-rendering: geometricPrecision;
 }
 
-/* Hide player and thumbnails by default */
-.video-row, .thumbnails-row {
-  display: none;
-}
-
-/* Builder header (white) */
+/* Builder & Viewer header */
 .header {
   text-align: center;
   padding: 10px 0;
-  background: #fff;
-  border-bottom: 1px solid #ddd;
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
 }
-
-/* Page Title styling */
-#pageTitle {
-  color: #f04f24;
+#pageTitle,
+#playlistTitle {
+  color: var(--color-primary);
   text-transform: uppercase;
   font-family: 'Anton', sans-serif;
   font-size: 8em;
@@ -37,14 +41,29 @@ body * {
   margin: 0;
 }
 
-/* Controls area */
+/* Header container for logo */
+.header-container {
+  width: 100%;
+  background: var(--color-bg);
+  text-align: center;
+  padding: 10px 0;
+  flex: 0 0 auto;
+}
+#headerLogo {
+  width: 15vw;
+  max-width: 200px;
+  min-width: 100px;
+}
+
+/* Controls area (builder) */
 #controls {
   max-width: 800px;
   margin: 20px auto;
   padding: 0 10px;
 }
-.input-url, .input-area {
-  border: 1px solid #ccc;
+.input-url,
+.input-area {
+  border: 1px solid var(--color-input-border);
   border-radius: 4px;
   padding: 8px;
 }
@@ -55,21 +74,17 @@ body * {
   box-sizing: border-box;
   margin: 10px 0;
 }
-.share {
-  margin-top: 10px;
-  font-size: 14px;
-}
+.share { margin-top: 10px; font-size: 14px; }
 
 /* Unified button styling */
 .btn {
   font-family: 'Anton', sans-serif;
-  background: #fff;
-  color: #f04f24;
-  border: 1px solid #f04f24;
+  background: var(--color-bg);
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
   border-radius: 9999px;
   padding: 8px 24px;
   font-size: 1.125em;
-  line-height: 22px;
   text-transform: uppercase;
   letter-spacing: 3px;
   cursor: pointer;
@@ -77,15 +92,15 @@ body * {
   transition: background-color .2s, color .2s;
 }
 .btn:hover {
-  background: #f04f24;
-  color: #fff;
+  background: var(--color-primary);
+  color: var(--color-bg);
 }
 
-/* Nav arrows (white) */
+/* Nav arrows */
 .btn-nav {
   background: none;
   border: none;
-  color: #fff;
+  color: var(--color-bg);
   font-size: 2em;
   cursor: pointer;
   position: absolute;
@@ -95,78 +110,45 @@ body * {
 #prevBtn { left: 1rem; }
 #nextBtn { right: 1rem; }
 
-/* Content - main container */
+/* Content container */
 .content {
   display: flex;
   flex-direction: column;
-  background: #fff;
+  background: var(--color-bg);
   width: 100%;
-  height: 100vh;
+  flex: 1 1 auto;
   overflow: hidden;
-  /* Masonry-like tight packing */
   gap: 0;
 }
 
-/* White header with logo */
-.header-container {
-  width: 100%;
-  background: #fff;
-  text-align: center;
-  padding: 10px 0;
-  flex: 0 0 auto;
-  /* Ensure no bottom margin */
-  margin-bottom: 0;
-}
-#headerLogo {
-  width: 15vw;
-  max-width: 200px;
-  min-width: 100px;
-  display: inline-block;
-}
-.current-title {
-  color: #fff;
-}
-
-/* Main container for all content rows */
+/* Main container for video and thumbnails */
 .main-container {
-  display: flex;
-  flex-direction: column;
+  display: none;
   flex: 1;
   overflow: hidden;
-  display: none;
-  background-color: #18332f;
-  /* Masonry-like tight packing */
-  gap: 0;
+  background-color: var(--color-bg-dark);
 }
 
-/* Combined video and thumbnails container */
 .video-content-container {
   display: flex;
   flex-direction: column;
   flex: 1;
   overflow: hidden;
-  background: #18332f;
-  /* Masonry-like tight packing */
-  gap: 0;
+  background: var(--color-bg-dark);
 }
 
-/* Video row */
+/* Video player row */
 .video-row {
   flex: 1 1 auto;
-  background-color: #18332f;
-  min-height: 0; /* Important for Firefox */
+  background-color: var(--color-bg-dark);
+  min-height: 0;
   display: flex;
-  flex-direction: column;
-  /* Ensure no bottom margin */
-  margin-bottom: 0;
-  position: relative; /* For loading overlay positioning */
+  position: relative;
 }
-
-/* Video player */
 .player-container {
   width: 100%;
   height: 100%;
-  background: #18332f;
+  background: var(--color-bg-dark);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -175,125 +157,68 @@ body * {
 .player-container iframe {
   width: 100%;
   height: 100%;
-  min-height: 400px; /* Ensure minimum height for the player */
-  display: block;
+  min-height: 400px;
   border: none;
-  object-fit: contain; /* Maintain aspect ratio */
+  object-fit: contain;
 }
 .player-container .placeholder {
   font-size: 16px;
-  line-height: 1.5;
-  margin: 0;
+  color: var(--color-bg);
   padding: 20px;
-  color: #fff;
 }
 
-/* Thumbnails row - now directly attached to video player */
+/* Thumbnails row */
 .thumbnails-row {
   flex: 0 0 auto;
-  background: #f04f24;
+  background: var(--color-primary);
   padding: 5px 0;
-  height: 180px; /* Fixed height for thumbnails section */
-  margin-top: 0; /* Ensure no gap between video and thumbnails */
-  /* Ensure no bottom margin */
-  margin-bottom: 0;
-  /* Ensure direct connection to video player */
-  border-top: 0;
-  position: relative; /* For loading overlay positioning */
+  height: 180px;
+  position: relative;
 }
-
-/* Footer row */
-.footer-row {
-  flex: 0 0 auto;
-  background: #333;
-  height: 40px;
-  color: white;
-  margin-top: 0; /* Ensure no gap above footer */
-}
-
-.footer-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  height: 100%;
-  padding: 0 15px;
-}
-
-.video-info {
-  display: flex;
-  gap: 15px;
-}
-
-.controls {
-  display: flex;
-  gap: 10px;
-}
-
-.control-btn {
-  background: none;
-  border: 1px solid white;
-  color: white;
-  padding: 3px 10px;
-  border-radius: 3px;
-  cursor: pointer;
-  font-size: 12px;
-  transition: background-color 0.2s;
-}
-
-.control-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-/* Current video title styling (white text) */
-#currentTitle {
-  font-family: 'Anton', sans-serif;
-  text-transform: uppercase;
-  color: #fff;
-  font-size: 20px;
-  text-align: center;
-  padding: 5px 0;
-  margin: 0;
-}
-
-/* Center gallery within slider */
 .slider-container {
   position: relative;
   display: flex;
   align-items: center;
+  height: 140px;
   padding: 5px 0;
-  height: 140px; /* Slightly reduced height */
 }
-.slider-container .video-gallery {
+.video-gallery {
   max-width: 85vw;
   margin: 0 auto;
   display: flex;
   gap: 15px;
   overflow-x: auto;
   padding: 10px 5px;
-  background: transparent;
-  border-radius: 4px;
   height: 100%;
 }
 
-/* Thumbnail styling */
+/* Footer row */
+.footer-row {
+  flex: 0 0 auto;
+  background: var(--color-secondary);
+  height: 40px;
+  color: var(--color-bg);
+}
+
+/* Thumbnails */
 .thumbnail {
   flex: 0 0 auto;
   width: 120px;
-  background: #fff;
+  background: var(--color-bg);
   border: 2px solid transparent;
   border-radius: 4px;
   padding: 5px;
   cursor: pointer;
   position: relative;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: transform 0.15s, box-shadow 0.15s;
 }
 .thumbnail:hover,
 .thumbnail.active {
-  border-color: #f04f24;
+  border-color: var(--color-primary);
 }
 .thumbnail:hover:not(.sortable-ghost):not(.sortable-chosen) {
   transform: translateY(-2px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 .thumbnail img {
   width: 100%;
@@ -305,13 +230,13 @@ body * {
   margin-top: 5px;
 }
 
-/* Drag handle styling */
-.thumbnail .drag-handle {
+/* Drag handle */
+.drag-handle {
   position: absolute;
   top: 5px;
   right: 5px;
-  background: rgba(240, 79, 36, 0.8);
-  color: white;
+  background: rgba(240,79,36,0.8);
+  color: #fff;
   border-radius: 4px;
   width: 20px;
   height: 20px;
@@ -319,171 +244,39 @@ body * {
   align-items: center;
   justify-content: center;
   cursor: grab;
-  font-size: 14px;
   opacity: 0.5;
-  transition: opacity 0.2s ease;
-  z-index: 10;
 }
-
-.thumbnail:hover .drag-handle {
+.drag-handle:hover {
   opacity: 1;
 }
 
-/* Styling for the item being dragged */
-.sortable-ghost {
-  opacity: 0.4;
-  background: #f8f8f8;
-  border: 2px dashed #f04f24;
-}
-
-/* Styling for the chosen item */
-.sortable-chosen {
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-  z-index: 100;
-}
-
-/* Styling for the drop placeholder */
-.sortable-fallback {
-  transform: rotate(3deg);
-}
-
-/* Media queries for responsive design */
-@media (max-width: 768px) {
-  .thumbnails-row {
-    height: 170px; /* Slightly smaller on tablets */
-  }
-  
-  .slider-container {
-    height: 130px; /* Slightly smaller thumbnails on tablets */
-  }
-}
-
-/* Additional media query for very small screens */
-@media (max-width: 480px) {
-  #headerLogo {
-    width: 30vw; /* Larger logo on mobile */
-  }
-  
-  .header-container {
-    padding: 5px 0; /* Smaller padding on mobile */
-  }
-  
-  .thumbnails-row {
-    height: 140px; /* Smaller on phones */
-  }
-  
-  .slider-container {
-    height: 100px; /* Smaller thumbnails on phones */
-    padding: 2px 0;
-  }
-  
-  .slider-container .video-gallery {
-    max-width: 90vw; /* Wider gallery on phones */
-    gap: 8px; /* Smaller gaps between thumbnails */
-  }
-  
-  .thumbnail {
-    width: 90px; /* Smaller thumbnails on phones */
-    padding: 3px;
-  }
-  
-  #currentTitle {
-    font-size: 16px; /* Smaller title on mobile */
-    padding: 3px 0;
-  }
-  
-  .footer-content {
-    padding: 0 8px;
-  }
-  
-  .control-btn {
-    padding: 2px 6px;
-    font-size: 11px;
-  }
-  
-  .video-info {
-    gap: 8px;
-    font-size: 11px;
-  }
-}
-
-/* Extra small screens */
-@media (max-width: 320px) {
-  .thumbnails-row {
-    height: 120px;
-  }
-  
-  .slider-container {
-    height: 85px;
-  }
-  
-  .thumbnail {
-    width: 80px;
-  }
-  
-  .footer-content {
-    padding: 0 5px;
-  }
-  
-  .control-btn {
-    padding: 1px 4px;
-    font-size: 10px;
-  }
-  
-  .video-info {
-    gap: 5px;
-    font-size: 10px;
-  }
-}
-
-/* Loading indicator styles */
+/* Loading indicator */
 .loading-indicator {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(255, 255, 255, 0.8);
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background-color: rgba(255,255,255,0.8);
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   z-index: 1000;
 }
-
 .loading-spinner {
-  width: 50px;
-  height: 50px;
+  width: 50px; height: 50px;
   border: 5px solid #f3f3f3;
-  border-top: 5px solid #f04f24;
+  border-top: 5px solid var(--color-primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 15px;
 }
-
 .loading-text {
   font-family: 'Anton', sans-serif;
-  color: #f04f24;
+  color: var(--color-primary);
   text-transform: uppercase;
 }
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-/* The loading indicator can be toggled by adding/removing the 'hidden' class */
-.hidden {
-  display: none;
-}
-
-/* Simple notification area styling */
-.notification-area {
-  margin-top: 15px;
-  width: 100%;
-}
-/* Hide the main content area by default */
-.main-container {
-  display: none;
-  background-color: #18332f;
-}
+/* Utility */
+.hidden { display: none; }
+.notification-area { margin-top: 15px; width: 100%; }

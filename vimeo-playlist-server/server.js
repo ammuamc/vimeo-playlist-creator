@@ -1,78 +1,70 @@
-// server.js
-// Express server with lowdb JSON "database" and slug‑based playlist IDs
+import express from 'express';
+import cors from 'cors';
+import { Low } from 'lowdb';
+import { JSONFile } from 'lowdb/node';
+import slugify from 'slugify';
+import { nanoid } from 'nanoid';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-const express   = require('express');
-const cors      = require('cors');
-const { Low }   = require('lowdb');
-const { JSONFile } = require('lowdb/node');
-const slugify   = require('slugify');
-const { nanoid } = require('nanoid');
-const { join }  = require('path');
+// Shim __dirname in ESM
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-// --- lowdb setup ---
-const dbFile      = join(__dirname, 'db.json');
-const adapter     = new JSONFile(dbFile);
-const defaultData = { playlists: {} };
-const db          = new Low(adapter, defaultData);
-
-async function initDB() {
-  await db.read();
-  db.data ||= defaultData;
-  await db.write();
-}
-
-// --- Express setup ---
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Serve static frontend
-app.use(express.static(join(__dirname, 'public')));
+// LowDB setup
+const adapter = new JSONFile(path.join(__dirname, 'db.json'));
+const db = new Low(adapter, { playlists: [] });
+await db.read();
 
-// List all playlists (GET /api/playlists)
-app.get('/api/playlists', async (req, res) => {
-  await db.read();
-  const list = Object.entries(db.data.playlists || {}).map(
-    ([id, { name, urls }]) => ({ id, name, urls })
-  );
-  res.json(list);
-});
+// Ensure data structure
+if (!db.data) db.data = { playlists: [] };
 
-// Create a new playlist (POST /api/playlists)
+// Serve static assets
+app.use(express.static(path.join(__dirname, 'public')));
+
+// API: Create or update playlist with custom slug from name
 app.post('/api/playlists', async (req, res) => {
-  const { name, urls } = req.body;
-  if (!Array.isArray(urls) || urls.length === 0) {
-    return res.status(400).json({ error: 'urls must be a non-empty array' });
+  try {
+    const { name, urls } = req.body;
+    if (!name || !Array.isArray(urls)) {
+      return res.status(400).json({ error: 'Missing name or urls' });
+    }
+    // Slugify playlist name
+    let slug = slugify(name, { lower: true, strict: true });
+    // Avoid collisions
+    if (db.data.playlists.find(p => p.id === slug)) {
+      slug = `${slug}-${nanoid(4)}`;
+    }
+    db.data.playlists.push({ id: slug, name, urls });
+    await db.write();
+    res.json({ id: slug });
+  } catch (err) {
+    console.error('Error saving playlist:', err);
+    res.status(500).json({ error: 'Failed to save playlist' });
   }
-
-  // Generate a URL‑safe slug from the name
-  let slug = slugify(name, { lower: true, strict: true });
-  if (!slug) slug = nanoid(4);
-  // Avoid collisions by appending a short nanoid if needed
-  if (db.data.playlists[slug]) {
-    slug = `${slug}-${nanoid(4)}`;
-  }
-
-  // Persist playlist under that slug
-  db.data.playlists[slug] = { name, urls };
-  await db.write();
-
-  // Return the slug as the playlist ID
-  res.json({ id: slug });
 });
 
-// Retrieve a playlist by ID (GET /api/playlists/:id)
-app.get('/api/playlists/:id', async (req, res) => {
-  await db.read();
-  const playlist = db.data.playlists[req.params.id];
-  if (!playlist) {
-    return res.status(404).json({ error: 'Playlist not found' });
-  }
-  res.json({ id: req.params.id, ...playlist });
+// API: Fetch playlist
+app.get('/api/playlists/:id', (req, res) => {
+  const entry = db.data.playlists.find(p => p.id === req.params.id);
+  if (!entry) return res.status(404).json({ error: 'Not found' });
+  // Return name and urls
+  res.json({ name: entry.name, urls: entry.urls });
 });
 
-// Start the server after initializing DB
-initDB().then(() => {
-  const port = process.env.PORT || 3000;
-  app.listen(port, () => console.log(`Server running at http://localhost:${port}`));
+// Viewer route
+app.get('/playlist/:id', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'playlist.html'));
 });
+
+// Fallback to builder UI
+app.use((req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`🚀 Server listening on http://localhost:${PORT}`));
